@@ -1,0 +1,18 @@
+# Environment variables (API Keys)
+.env
+
+# Python Virtual Environment
+venv/
+ENV/
+env/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Database files
+*.duckdb
+*.sqlite3
+
+# Streamlit config / cache
+.streamlit/

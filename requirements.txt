@@ -1,7 +1,8 @@
 streamlit
+pandas
 duckdb
 groq
+python-dotenv
 sqlglot
 plotly
-pandas
-python-dotenv
+openpyxl

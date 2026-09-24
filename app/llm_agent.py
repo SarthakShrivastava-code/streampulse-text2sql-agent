@@ -20,7 +20,7 @@ def generate_sql(user_question: str, schema_info: str) -> str:
     """
     
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-70b-versatile",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_question}
@@ -48,7 +48,7 @@ def auto_heal_sql(user_question: str, schema_info: str, broken_sql: str, error_m
     """
     
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-70b-versatile",
         messages=[{"role": "system", "content": system_prompt}],
         temperature=0.1
     )
@@ -64,7 +64,7 @@ def generate_executive_summary(user_question: str, df_data_sample: str) -> str:
     user_prompt = f"User Question: {user_question}\nData Sample:\n{df_data_sample}"
     
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-70b-versatile",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}

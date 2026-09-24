@@ -3,10 +3,24 @@ from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# Active production model on Groq
-MODEL_NAME = "llama-3.3-70b-versatile"
+# Active model verified directly from your Groq key
+MODEL_NAME = "openai/gpt-oss-20b"
+
+def get_groq_client():
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise ValueError("GROQ_API_KEY is missing from environment variables or .env file.")
+    return Groq(api_key=api_key)
+
+def _chat_completion(messages, temperature=0.1):
+    client = get_groq_client()
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=messages,
+        temperature=temperature
+    )
+    return response.choices[0].message.content.strip()
 
 def generate_sql(user_question: str, schema_info: str) -> str:
     """Generates DuckDB SQL from natural language input."""
@@ -22,16 +36,13 @@ def generate_sql(user_question: str, schema_info: str) -> str:
     3. Match table and column names exactly as defined in the schema.
     """
     
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
+    raw_content = _chat_completion(
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_question}
         ],
         temperature=0.1
     )
-    
-    raw_content = response.choices[0].message.content.strip()
     return _extract_sql(raw_content)
 
 def auto_heal_sql(user_question: str, schema_info: str, broken_sql: str, error_message: str) -> str:
@@ -50,35 +61,26 @@ def auto_heal_sql(user_question: str, schema_info: str, broken_sql: str, error_m
     Analyze the error and return ONLY a corrected, valid DuckDB SQL query inside markdown code blocks ```sql ... ```.
     """
     
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
+    raw_content = _chat_completion(
         messages=[{"role": "system", "content": system_prompt}],
         temperature=0.1
     )
-    
-    return _extract_sql(response.choices[0].message.content.strip())
+    return _extract_sql(raw_content)
 
 def generate_executive_summary(user_question: str, df_data_sample: str) -> str:
     """Generates a 2-sentence executive summary based on query results."""
-    system_prompt = """
-    You are a senior data analyst. Provide a concise, professional 2-sentence business summary of the query results. Focus on key metrics, trends, or notable findings.
-    """
-    
+    system_prompt = "You are a senior data analyst. Provide a concise, professional 2-sentence business summary of the query results."
     user_prompt = f"User Question: {user_question}\nData Sample:\n{df_data_sample}"
     
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
+    return _chat_completion(
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
         temperature=0.3
     )
-    
-    return response.choices[0].message.content.strip()
 
 def _extract_sql(raw_content: str) -> str:
-    """Helper to extract clean SQL from LLM markdown wrappers."""
     if "```sql" in raw_content:
         return raw_content.split("```sql")[1].split("```")[0].strip()
     elif "```" in raw_content:

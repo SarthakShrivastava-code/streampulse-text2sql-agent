@@ -91,7 +91,11 @@ if st.button("Generate SQL", type="primary"):
         st.warning("Please enter a question.")
     else:
         with st.spinner("Translating natural language to SQL..."):
-            sql_query = generate_sql(user_question, schema_info)
+            try:
+                sql_query = generate_sql(user_question, schema_info)
+            except ValueError as gen_err:
+                st.error(f"❌ SQL generation error: {gen_err}")
+                st.stop()
             
             # Developer A's AST Security Check
             try:
@@ -117,6 +121,8 @@ if st.button("Generate SQL", type="primary"):
                         
                         df = conn.execute(sql_query).fetchdf()
                         st.success("✅ Self-healing successful! Query executed.")
+                    except ValueError as heal_value_err:
+                        st.error(f"❌ SQL repair error: {heal_value_err}")
                     except Exception as heal_err:
                         st.error(f"❌ Auto-repair failed: {heal_err}")
 

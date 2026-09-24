@@ -1,4 +1,5 @@
 import os
+import re
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -81,8 +82,47 @@ def generate_executive_summary(user_question: str, df_data_sample: str) -> str:
     )
 
 def _extract_sql(raw_content: str) -> str:
-    if "```sql" in raw_content:
-        return raw_content.split("```sql")[1].split("```")[0].strip()
-    elif "```" in raw_content:
-        return raw_content.split("```")[1].split("```")[0].strip()
-    return raw_content.strip()
+    """Extract SQL from model output, rejecting refusal text and other non-SQL content."""
+    if raw_content is None:
+        raise ValueError("The model returned empty output.")
+
+    content = raw_content.strip()
+    if not content:
+        raise ValueError("The model returned empty output.")
+
+    normalized = re.sub(r"\s+", " ", content).lower()
+    refusal_patterns = (
+        "i'm sorry",
+        "i am sorry",
+        "i can’t help",
+        "i can't help",
+        "i can not help",
+        "cannot help",
+        "can't assist",
+        "cannot assist",
+        "not able to help",
+        "as an ai",
+        "i'm not able",
+    )
+    if any(pattern in normalized for pattern in refusal_patterns):
+        raise ValueError(
+            "The model refused to generate SQL for this request. Please rephrase the question or ask for a different table/metric."
+        )
+
+    if "```sql" in content:
+        extracted = content.split("```sql")[1].split("```")[0].strip()
+    elif "```" in content:
+        extracted = content.split("```")[1].split("```")[0].strip()
+    else:
+        extracted = content.strip("`").strip()
+
+    if not extracted:
+        raise ValueError("The model returned no SQL query.")
+
+    sql_tokens = [token for token in ("select", "with", "from", "show") if token in re.sub(r"\s+", " ", extracted).lower()]
+    if not sql_tokens:
+        raise ValueError(
+            "The model returned non-SQL text instead of a SELECT query. Please rephrase your question."
+        )
+
+    return extracted

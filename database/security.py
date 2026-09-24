@@ -39,11 +39,16 @@ def validate_read_only_query(sql: str, dialect: str = "duckdb") -> None:
     if not sql or not sql.strip():
         raise ValueError("Query string cannot be empty.")
 
+    # Clean out any trailing markdown backticks if LLM returns them
+    cleaned_sql = sql.strip().strip("`").strip()
+
     try:
         # sqlglot.parse returns a list of all parsed AST statements
-        statements = sqlglot.parse(sql, read=dialect)
+        statements = sqlglot.parse(cleaned_sql, read=dialect)
     except ParseError as exc:
-        raise ValueError(f"SQL parsing error: {exc}") from exc
+        raise ValueError(
+            "The model returned non-SQL text or invalid syntax that could not be parsed as a query."
+        ) from exc
 
     # Filter out empty statements (e.g., trailing semicolons)
     parsed_statements = [stmt for stmt in statements if stmt is not None]

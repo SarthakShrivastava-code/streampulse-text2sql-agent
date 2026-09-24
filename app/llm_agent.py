@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# Permanent active Groq model
-MODEL_NAME = "llama3-70b-8192"
+# Active production model on Groq
+MODEL_NAME = "llama-3.3-70b-versatile"
 
 def generate_sql(user_question: str, schema_info: str) -> str:
     """Generates DuckDB SQL from natural language input."""

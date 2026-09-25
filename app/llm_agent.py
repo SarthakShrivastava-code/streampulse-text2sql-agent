@@ -5,16 +5,31 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Smart API Key routing: checks local .env first, then Streamlit Cloud Secrets
-api_key = os.getenv("GROQ_API_KEY")
-if not api_key:
+def _get_api_key() -> str | None:
+    """Resolve the Groq key from local environment or Streamlit secrets."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if api_key:
+        return api_key
+
     try:
-        api_key = st.secrets["GROQ_API_KEY"]
+        api_key = st.secrets.get("GROQ_API_KEY")
     except Exception:
         api_key = None
 
-# Initialize the Groq client with the detected key
-client = Groq(api_key=api_key)
+    return api_key or None
+
+
+client: Groq | None = None
+
+
+def _get_client() -> Groq:
+    global client
+    if client is None:
+        api_key = _get_api_key()
+        if not api_key:
+            raise RuntimeError("GROQ_API_KEY is not configured in the environment or Streamlit secrets.")
+        client = Groq(api_key=api_key)
+    return client
 
 # Keep the model configurable because Groq model availability can change.
 MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
@@ -33,7 +48,7 @@ def generate_sql(user_question: str, schema_info: str) -> str:
     3. Match table and column names exactly as defined in the schema.
     """
     
-    response = client.chat.completions.create(
+    response = _get_client().chat.completions.create(
         model=MODEL_NAME,
         messages=[
             {"role": "system", "content": system_prompt},
@@ -61,7 +76,7 @@ def auto_heal_sql(user_question: str, schema_info: str, broken_sql: str, error_m
     Analyze the error and return ONLY a corrected, valid DuckDB SQL query inside markdown code blocks ```sql ... ```.
     """
     
-    response = client.chat.completions.create(
+    response = _get_client().chat.completions.create(
         model=MODEL_NAME,
         messages=[{"role": "system", "content": system_prompt}],
         temperature=0.1
@@ -77,7 +92,7 @@ def generate_executive_summary(user_question: str, df_data_sample: str) -> str:
     
     user_prompt = f"User Question: {user_question}\nData Sample:\n{df_data_sample}"
     
-    response = client.chat.completions.create(
+    response = _get_client().chat.completions.create(
         model=MODEL_NAME,
         messages=[
             {"role": "system", "content": system_prompt},

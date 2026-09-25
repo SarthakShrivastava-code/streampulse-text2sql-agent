@@ -1,12 +1,23 @@
 import os
+import streamlit as st
 from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+# Smart API Key routing: checks local .env first, then Streamlit Cloud Secrets
+api_key = os.getenv("GROQ_API_KEY")
+if not api_key:
+    try:
+        api_key = st.secrets["GROQ_API_KEY"]
+    except Exception:
+        api_key = None
+
+# Initialize the Groq client with the detected key
+client = Groq(api_key=api_key)
 
 # Keep the model configurable because Groq model availability can change.
-MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
 def generate_sql(user_question: str, schema_info: str) -> str:
     """Generates DuckDB SQL from natural language input."""

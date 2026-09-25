@@ -31,8 +31,7 @@ def _get_client() -> Groq:
         client = Groq(api_key=api_key)
     return client
 
-# Keep the model configurable because Groq model availability can change.
-MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+MODEL_NAME = "llama3-8b-8192"
 
 def generate_sql(user_question: str, schema_info: str) -> str:
     """Generates DuckDB SQL from natural language input."""

@@ -31,7 +31,7 @@ def _get_client() -> Groq:
         client = Groq(api_key=api_key)
     return client
 
-MODEL_NAME = "gemma2-9b-it"
+MODEL_NAME = "openai/gpt-oss-20b"
 
 def generate_sql(user_question: str, schema_info: str) -> str:
     """Generates DuckDB SQL from natural language input."""

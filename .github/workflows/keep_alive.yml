@@ -1,0 +1,52 @@
+name: Keep StreamPulse Text2SQL Agent Awake
+
+on:
+  schedule:
+    # Runs every 4 hours to keep Streamlit warm and prevent hibernation
+    - cron: '0 */4 * * *'
+  workflow_dispatch: # Allows manual trigger anytime from GitHub Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install chromium
+
+      - name: Visit StreamPulse Text2SQL Agent with Headless Browser
+        run: |
+          python -c "
+          from playwright.sync_api import sync_playwright
+          import time
+
+          url = 'https://streampulse-text2sql-agent-gw5myfxgezv5zfxxgzwkek.streamlit.app/'
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch(headless=True)
+              page = browser.new_page()
+              print(f'Visiting {url}...')
+              try:
+                  page.goto(url, timeout=60000)
+                  time.sleep(12)
+                  
+                  # Look for Streamlit's sleep wake-up button
+                  wake_button = page.query_selector('button:has-text(\"Yes, get this app back up!\")')
+                  if wake_button:
+                      print('App was sleeping. Clicking Wake Up button...')
+                      wake_button.click()
+                      time.sleep(20)
+                      print('Wake-up signal sent successfully.')
+                  else:
+                      print('App is already awake and active!')
+              except Exception as e:
+                  print(f'Error visiting app: {e}')
+              finally:
+                  browser.close()
+          "
